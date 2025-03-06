@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大龙课堂消消乐</title>
+    <style>
+        body {
+            background-color: #fff5e6;
+            margin: 0;
+            padding: 15px;
+            font-family: "PingFang SC", system-ui;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 {
+            color: #333;
+            font-size: 1.8rem;
+            text-align: center;
+            margin: 20px 0;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        #gameBoard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 10px;
+            max-width: 100%;
+        }
+        .bubble {
+            width: 20vw;
+            height: 20vw;
+            min-width: 70px;
+            min-height: 70px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: white;
+            font-weight: 700;
+            font-size: 4vw;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+            touch-action: manipulation;
+        }
+        @media (max-width: 480px) {
+            .bubble {
+                font-size: 16px;
+                width: 22vw;
+                height: 22vw;
+            }
+        }
+        .bubble:active {
+            transform: scale(0.95);
+        }
+        #message {
+            font-size: 1.5rem;
+            color: #28a745;
+            margin: 30px 0;
+            text-align: center;
+            display: none;
+        }
+        /* 竖屏优化 */
+        @media (orientation: portrait) {
+            #gameBoard {
+                gap: 8px;
+            }
+            .bubble {
+                font-size: 14px;
+            }
+        }
+        /* 横屏优化 */
+        @media (orientation: landscape) {
+            h1 {
+                font-size: 1.5rem;
+                margin: 10px 0;
+            }
+            #gameBoard {
+                gap: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>大龙课堂消消乐</h1>
+    <div id="gameBoard"></div>
+    <div id="message">恭喜你挑战成功!</div>
+    <script>
+        const vocabulary = {
+            "水": "water",
+            "茶": "tea",
+            "咖啡": "coffee",
+            "果汁": "juice",
+            "可乐": "cola",
+            "牛奶": "milk",
+            "酒": "wine",
+            "饮料": "beverage"
+        };
+        let firstSelected = null;
+        const gameBoard = document.getElementById('gameBoard');
+        const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ff9f89', '#ffd700', '#20b2aa', '#9370db'];
+        function createBubbles() {
+            const pairs = [];
+            
+            // 生成中英文配对
+            Object.entries(vocabulary).forEach(([ch, en]) => {
+                pairs.push(createBubble(ch, 'ch'));
+                pairs.push(createBubble(en, 'en'));
+            });
+            // 洗牌算法
+            for (let i = pairs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+            }
+            pairs.forEach(bubble => gameBoard.appendChild(bubble));
+        }
+        function createBubble(text, type) {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+            bubble.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            // 存储配对信息
+            bubble.dataset.matchValue = type === 'ch' ? vocabulary[text] : text;
+            bubble.dataset.type = type;
+            
+            // 添加3D效果
+            bubble.style.transform = 'translateZ(15px)';
+            
+            bubble.addEventListener('click', handleTap);
+            return bubble;
+        }
+        function handleTap(e) {
+            const bubble = e.target;
+            
+            if (!firstSelected) {
+                firstSelected = bubble;
+                bubble.style.transform = 'translateZ(15px) scale(0.95)';
+            } else {
+                if (bubble === firstSelected) return;
+                
+                const isMatch = checkMatch(firstSelected, bubble);
+                if (isMatch) {
+                    handleMatch(firstSelected, bubble);
+                } else {
+                    resetBubbles();
+                }
+                firstSelected = null;
+            }
+        }
+        function checkMatch(b1, b2) {
+            return b1.dataset.matchValue === b2.dataset.matchValue && 
+                   b1.dataset.type !== b2.dataset.type;
+        }
+        function handleMatch(b1, b2) {
+            b1.style.opacity = '0';
+            b2.style.opacity = '0';
+            setTimeout(() => {
+                gameBoard.removeChild(b1);
+                gameBoard.removeChild(b2);
+                if (gameBoard.children.length === 0) {
+                    document.getElementById('message').style.display = 'block';
+                }
+            }, 300);
+        }
+        function resetBubbles() {
+            firstSelected.style.transform = 'translateZ(15px)';
+            setTimeout(() => {
+                firstSelected.style.transform = 'translateZ(15px)';
+            }, 300);
+        }
+        // 防止双击缩放
+        let lastTouch = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouch < 300) e.preventDefault();
+            lastTouch = now;
+        }, { passive: false });
+        // 初始化游戏
+        createBubbles();
+    </script>
+</body>
+</html>
